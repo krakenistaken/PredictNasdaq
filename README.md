@@ -1,4 +1,4 @@
-# PredictNasdaq 🚀
+# PredictNasdaq 🚀 https://krakenistaken.github.io/PredictNasdaq/ Page only gives live predictions of universal models(trained with data from every stock in nasdaq), for stock-spesific models, you need to use model locally because it trains models using the live data and it might take 1-5 minutes based on your computing power.
 
 > **NASDAQ AI Multi-Model Ensemble Stock Prediction Engine & Interactive Analytics Platform**
 
