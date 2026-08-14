@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NASDAQ AI Tahmin Merkezi - Yapay zeka ile hisse senedi analizi ve multi-model tahmin sistemi">
+    <title>🔮 NASDAQ AI Tahmin Merkezi (Multi-Model Ensemble)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+
+    <!-- Header -->
+    <header id="main-header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">🔮</span>
+                <div class="logo-text">
+                    <h1>NASDAQ AI Tahmin Merkezi</h1>
+                    <p class="subtitle">Multi-Model Ensemble · XGBoost · LightGBM · Random Forest</p>
+                </div>
+            </div>
+            <div class="header-stats">
+                <div class="stat-badge" id="stat-total-tickers">
+                    <span class="stat-value">—</span>
+                    <span class="stat-label">Hisse</span>
+                </div>
+                <div class="stat-badge" id="stat-model-status">
+                    <span class="stat-dot active"></span>
+                    <span class="stat-label">3 Model Aktif</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="app-main">
+        <!-- Left Panel: Stock Picker -->
+        <section class="panel panel-picker" id="stock-picker-panel">
+            <div class="panel-header">
+                <h2>📋 Hisse Seçimi</h2>
+                <span class="panel-badge" id="filtered-count"></span>
+            </div>
+
+            <!-- Search -->
+            <div class="search-container">
+                <div class="search-input-wrapper">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <input type="text" id="search-input" placeholder="Hisse ara... (AAPL, MSFT, NVDA)" autocomplete="off">
+                    <button id="search-clear" class="search-clear" title="Temizle" style="display:none;">✕</button>
+                </div>
+            </div>
+
+            <!-- Sector Filter -->
+            <div class="filter-row">
+                <select id="sector-filter" class="select-filter">
+                    <option value="">Tüm Sektörler</option>
+                </select>
+            </div>
+
+            <!-- Stock List -->
+            <div class="stock-list-container" id="stock-list-container">
+                <div class="stock-list" id="stock-list">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="loading-overlay" id="list-loading">
+                    <div class="spinner"></div>
+                    <p>NASDAQ hisseleri yükleniyor...</p>
+                </div>
+            </div>
+
+            <!-- Selected Stock + Action -->
+            <div class="action-bar" id="action-bar" style="display:none;">
+                <div class="selected-stock-info">
+                    <span class="selected-symbol" id="selected-symbol"></span>
+                    <span class="selected-name" id="selected-name"></span>
+                </div>
+                <button id="analyze-btn" class="btn-analyze" disabled>
+                    <span class="btn-icon">🚀</span>
+                    <span class="btn-text">Analiz Et</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Right Panel: Results -->
+        <section class="panel panel-results" id="results-panel">
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state">
+                <div class="empty-icon">📊</div>
+                <h3>Multi-Model Analiz Sonuçları</h3>
+                <p>Sol panelden bir hisse seçin ve <strong>Analiz Et</strong> butonuna tıklayın.</p>
+                <div class="empty-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">⚡</span>
+                        <span>3 Universal Model ile anlık enstrüman tahmini</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🎯</span>
+                        <span>Hisseye özel XGBoost, LightGBM ve Random Forest eğitimi</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🤖</span>
+                        <span>Konsensüs kararları &amp; model karşılaştırması</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Content (hidden by default) -->
+            <div class="results-content" id="results-content" style="display:none;">
+                <!-- Results Header -->
+                <div class="results-header">
+                    <div class="result-ticker-info">
+                        <h2 id="result-ticker-symbol">AAPL</h2>
+                        <span id="result-ticker-name" class="result-ticker-name">Apple Inc.</span>
+                    </div>
+                    <span class="result-date" id="result-date"></span>
+                </div>
+
+                <!-- Current Price Card -->
+                <div class="result-card card-price" id="card-price" style="display:none;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-icon">💰</span>
+                            <h3>Güncel Fiyat Bilgisi</h3>
+                        </div>
+                        <span class="card-badge badge-instant">📡 Canlı</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="price-hero">
+                            <span class="price-current" id="price-current">—</span>
+                            <span class="price-candle-time" id="price-candle-time"></span>
+                        </div>
+                        <div class="metric-row metric-row-4">
+                            <div class="metric">
+                                <span class="metric-label">Açılış</span>
+                                <span class="metric-value mono" id="price-open">—</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">En Yüksek</span>
+                                <span class="metric-value mono" id="price-high">—</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">En Düşük</span>
+                                <span class="metric-value mono" id="price-low">—</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Hacim</span>
+                                <span class="metric-value mono" id="price-volume">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Universal Multi-Model Card -->
+                <div class="result-card card-universal" id="card-universal">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-icon">🌐</span>
+                            <h3>Universal Modeller Tahminleri (Tüm NASDAQ)</h3>
+                        </div>
+                        <span class="card-badge badge-instant">⚡ Anlık</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="prediction-explanation" id="prediction-explanation"></div>
+
+                        <!-- Universal Consensus Banner -->
+                        <div class="consensus-banner" id="universal-consensus-banner" style="display:none;">
+                            <div class="consensus-icon" id="universal-consensus-icon">🤖</div>
+                            <div class="consensus-text">
+                                <h4 id="universal-consensus-title">Konsensüs Sinyali</h4>
+                                <p id="universal-consensus-desc">Modellerin ortak kararı hesaplanıyor...</p>
+                            </div>
+                        </div>
+
+                        <!-- 3 Universal Models Grid -->
+                        <div class="multi-models-grid" id="universal-models-grid">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+
+                        <!-- Feature Gauges -->
+                        <div class="feature-gauges" id="feature-gauges" style="display:none;">
+                            <h4>🔬 Modele Giren Teknik Göstergeler</h4>
+                            <div class="gauge-grid" id="gauge-grid"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ticker-Specific Multi-Model Card -->
+                <div class="result-card card-specific" id="card-specific">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-icon">🎯</span>
+                            <h3>Hisseye Özel 3 Model Eğitimi</h3>
+                        </div>
+                        <span class="card-badge badge-training" id="specific-badge">🔄 Eğitiliyor</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- Training Progress -->
+                        <div class="training-progress" id="training-progress">
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                            </div>
+                            <div class="progress-info">
+                                <span class="progress-pct" id="progress-pct">0%</span>
+                                <span class="progress-stage" id="progress-stage">Başlatılıyor...</span>
+                            </div>
+                        </div>
+
+                        <!-- Training Result (hidden until done) -->
+                        <div class="training-result" id="training-result" style="display:none;">
+                            <!-- Stock Specific Consensus Banner -->
+                            <div class="consensus-banner" id="specific-consensus-banner">
+                                <div class="consensus-icon" id="specific-consensus-icon">🏆</div>
+                                <div class="consensus-text">
+                                    <h4 id="specific-consensus-title">Hisseye Özel Konsensüs</h4>
+                                    <p id="specific-consensus-desc">—</p>
+                                </div>
+                            </div>
+
+                            <!-- 4 Stock-Specific Model Cards Grid -->
+                            <div class="multi-models-grid" id="specific-models-grid">
+                                <!-- Populated by JS -->
+                            </div>
+
+                            <!-- Feature Importance with Model Selector Tabs -->
+                            <div class="feature-importance" id="feature-importance">
+                                <div class="fi-header">
+                                    <h4>📊 Öznitelik Önem Sıralaması</h4>
+                                    <div class="model-tabs" id="fi-model-tabs">
+                                        <button class="tab-btn active" data-model="xgboost">🚀 XGBoost</button>
+                                        <button class="tab-btn" data-model="lightgbm">⚡ LightGBM</button>
+                                        <button class="tab-btn" data-model="random_forest">🌲 Random Forest</button>
+                                    </div>
+                                </div>
+                                <div class="fi-bars" id="fi-bars">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Error State -->
+                        <div class="training-error" id="training-error" style="display:none;">
+                            <span class="error-icon">⚠️</span>
+                            <p id="error-message"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
+
