@@ -16,10 +16,6 @@ permissions:
   id-token: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-<<<<<<< HEAD
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-=======
->>>>>>> ac025b1 (Fix GitHub Pages deployment: Add root index.html, relative asset paths, static fallback, and static.yml workflow)
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -39,7 +35,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
           path: '.'
       - name: Deploy to GitHub Pages
         id: deployment
