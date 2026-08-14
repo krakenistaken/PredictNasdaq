@@ -1,5 +1,5 @@
 /**
- * NASDAQ AI Tahmin Merkezi — Multi-Model Frontend Logic
+ * PredictNasdaq — Multi-Model Engine Frontend Logic
  * Handles ticker list, search/filter, multi-model predictions (XGBoost, LightGBM, Random Forest, SVM),
  * consensus banners, and background task polling.
  */
@@ -165,7 +165,7 @@ async function loadTickers() {
         statTotalTickers.querySelector('.stat-value').textContent = allTickers.length.toLocaleString();
 
         const sectors = [...new Set(allTickers.map(t => t.sector).filter(s => s && s !== '' && s !== 'None'))].sort();
-        sectorFilter.innerHTML = '<option value="">Tüm Sektörler</option>';
+        sectorFilter.innerHTML = '<option value="">All Sectors</option>';
         sectors.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s;
@@ -176,7 +176,7 @@ async function loadTickers() {
         renderStockList();
         listLoading.classList.add('hidden');
     } catch (err) {
-        listLoading.innerHTML = `<span style="color: var(--sell);">❌ Hata: ${err.message}</span>`;
+        listLoading.innerHTML = `<span style="color: var(--sell);">❌ Error: ${err.message}</span>`;
     }
 }
 
@@ -211,7 +211,7 @@ function clearSearch() {
 
 // ─── Render Stock List ──────────────────────────────────────
 function renderStockList() {
-    filteredCountEl.textContent = `${filteredTickers.length} sonuç`;
+    filteredCountEl.textContent = `${filteredTickers.length} results`;
 
     const RENDER_LIMIT = 50;
     const toRender = filteredTickers.slice(0, RENDER_LIMIT);
@@ -222,7 +222,7 @@ function renderStockList() {
         stockList.innerHTML = `
             <div style="text-align:center; padding:40px 20px; color: var(--text-muted);">
                 <div style="font-size:2rem; margin-bottom:8px;">🔍</div>
-                <p>Sonuç bulunamadı</p>
+                <p>No tickers found</p>
             </div>
         `;
         return;
@@ -251,7 +251,7 @@ function renderStockList() {
     if (filteredTickers.length > RENDER_LIMIT) {
         const more = document.createElement('div');
         more.style.cssText = 'text-align:center; padding:12px; color: var(--text-muted); font-size:0.75rem;';
-        more.textContent = `... ve ${filteredTickers.length - RENDER_LIMIT} hisse daha (aramayı daraltın)`;
+        more.textContent = `... and ${filteredTickers.length - RENDER_LIMIT} more stocks (refine search)`;
         fragment.appendChild(more);
     }
 
@@ -346,7 +346,7 @@ async function runAnalysis() {
             const p = data.price_info;
             cardPrice.style.display = 'block';
             priceCurrent.textContent = '$' + p.current_price.toLocaleString('en-US', {minimumFractionDigits: 2});
-            priceCandleTime.textContent = 'Son mum: ' + p.last_candle_time;
+            priceCandleTime.textContent = 'Last candle: ' + p.last_candle_time;
             priceOpen.textContent = '$' + p.open.toFixed(2);
             priceHigh.textContent = '$' + p.high.toFixed(2);
             priceLow.textContent = '$' + p.low.toFixed(2);
@@ -358,7 +358,7 @@ async function runAnalysis() {
             renderUniversalResults(data.universal, ticker.symbol, data.price_info);
         } else {
             universalConsensusBanner.style.display = 'none';
-            universalModelsGrid.innerHTML = `<div class="error-msg">⚠️ ${data.universal?.error || 'Universal modeller bulunamadı'}</div>`;
+            universalModelsGrid.innerHTML = `<div class="error-msg">⚠️ ${data.universal?.error || 'Universal models not found'}</div>`;
         }
 
         // ── Background task polling ──
@@ -367,7 +367,7 @@ async function runAnalysis() {
         }
 
     } catch (err) {
-        universalModelsGrid.innerHTML = `<div class="error-msg">❌ Hata: ${err.message}</div>`;
+        universalModelsGrid.innerHTML = `<div class="error-msg">❌ Error: ${err.message}</div>`;
     } finally {
         analyzeBtn.classList.remove('loading');
         analyzeBtn.disabled = false;
@@ -387,16 +387,15 @@ function renderUniversalResults(universalData, symbol, priceInfo) {
         universalConsensusBanner.style.display = 'flex';
         universalConsensusBanner.className = `consensus-banner ${isBuy ? 'buy' : 'sell'}`;
         universalConsensusIcon.textContent = isBuy ? '🚀' : '📉';
-        universalConsensusTitle.textContent = `Universal Konsensüs: ${isBuy ? 'AL (BUY)' : 'SAT (SELL)'}`;
-        universalConsensusDesc.textContent = `${c.buy_count} / ${c.total_models} Model AL Yönünde · Ort. Güven: %${c.avg_confidence}`;
+        universalConsensusTitle.textContent = `Universal Consensus: ${isBuy ? 'BUY' : 'SELL'}`;
+        universalConsensusDesc.textContent = `${c.buy_count} / ${c.total_models} Models Signal BUY · Avg Confidence: ${c.avg_confidence}%`;
 
         const priceStr = priceInfo ? ` $${priceInfo.current_price.toFixed(2)}` : '';
-        const signalTR = isBuy ? 'YÜKSELECEĞİNİ' : 'DÜŞECEĞİNİ';
+        const signalText = isBuy ? 'UPWARD (BULLISH)' : 'DOWNWARD (BEARISH)';
         predictionExplanation.innerHTML = `
-            <strong>Ne anlama geliyor?</strong> Universal modeller, <strong>${symbol}</strong> hissesinin
-            son mum verilerine (${lastDate}) dayanarak, bir sonraki mumda fiyatın${priceStr} seviyesinden
-            <strong>${signalTR}</strong> tahmin ediyor.
-            <br><em>Aşağıda XGBoost, LightGBM ve Random Forest modellerinin bağımsız tahminleri listelenmiştir.</em>
+            <strong>What does this mean?</strong> Universal ensemble models predict that based on the latest candle data (${lastDate}), 
+            <strong>${symbol}</strong> price will move <strong>${signalText}</strong> from the current level${priceStr}.
+            <br><em>Independent model predictions from XGBoost, LightGBM, and Random Forest are listed below.</em>
         `;
     }
 
@@ -412,7 +411,7 @@ function renderUniversalResults(universalData, symbol, priceInfo) {
                         <span class="model-icon">${m.icon || '🤖'}</span>
                         <span class="model-name">${m.name}</span>
                     </div>
-                    <p class="model-error-text">Henüz eğitilmedi</p>
+                    <p class="model-error-text">Not trained yet</p>
                 `;
                 universalModelsGrid.appendChild(card);
                 continue;
@@ -432,11 +431,11 @@ function renderUniversalResults(universalData, symbol, priceInfo) {
                 <div class="model-card-body">
                     <div class="model-signal-badge ${isBuy ? 'buy' : 'sell'}">
                         <span class="signal-arrow">${isBuy ? '▲' : '▼'}</span>
-                        <span class="signal-name">${isBuy ? 'BUY — AL' : 'SELL — SAT'}</span>
+                        <span class="signal-name">${isBuy ? 'BUY' : 'SELL'}</span>
                     </div>
                     <div class="model-metric">
-                        <span class="metric-label">Güven Oranı</span>
-                        <span class="metric-val">%${m.confidence}</span>
+                        <span class="metric-label">Confidence</span>
+                        <span class="metric-val">${m.confidence}%</span>
                     </div>
                 </div>
             `;
@@ -463,20 +462,20 @@ function resetResultCards() {
     priceCandleTime.textContent = '';
 
     universalConsensusBanner.style.display = 'none';
-    universalModelsGrid.innerHTML = '<div class="spinner-container"><div class="spinner"></div><span>Universal modeller hesaplanıyor...</span></div>';
+    universalModelsGrid.innerHTML = '<div class="spinner-container"><div class="spinner"></div><span>Calculating universal ensemble predictions...</span></div>';
     resultDate.textContent = '';
     predictionExplanation.innerHTML = '';
     featureGauges.style.display = 'none';
     gaugeGrid.innerHTML = '';
 
-    specificBadge.textContent = '🔄 Eğitiliyor';
+    specificBadge.textContent = '🔄 Training';
     specificBadge.className = 'card-badge badge-training';
     trainingProgress.style.display = 'block';
     trainingResult.style.display = 'none';
     trainingError.style.display = 'none';
     progressBar.style.width = '0%';
     progressPct.textContent = '0%';
-    progressStage.textContent = 'Başlatılıyor...';
+    progressStage.textContent = 'Initializing...';
     cardSpecific.classList.remove('completed');
     fiBars.innerHTML = '';
 }
@@ -486,7 +485,7 @@ function resetResultCards() {
 function pollTaskStatus(taskId) {
     pollingInterval = setInterval(async () => {
         try {
-            const resp = await fetch(`/api/status/${taskId}`);
+            const resp = await fetch(getAppUrl(`api/status/${taskId}`));
             const task = await resp.json();
 
             progressBar.style.width = task.progress + '%';
@@ -512,7 +511,7 @@ function pollTaskStatus(taskId) {
 
 // ─── Show Specific Results ──────────────────────────────────
 function showSpecificResult(result) {
-    specificBadge.textContent = '✅ Tamamlandı';
+    specificBadge.textContent = '✅ Completed';
     specificBadge.className = 'card-badge badge-done';
     trainingProgress.style.display = 'none';
     trainingResult.style.display = 'block';
@@ -524,8 +523,8 @@ function showSpecificResult(result) {
         const isBuy = c.signal === 'BUY';
         specificConsensusBanner.className = `consensus-banner ${isBuy ? 'buy' : 'sell'}`;
         specificConsensusIcon.textContent = isBuy ? '🏆' : '⚠️';
-        specificConsensusTitle.textContent = `Hisseye Özel Consensus: ${isBuy ? 'AL (BUY)' : 'SAT (SELL)'}`;
-        specificConsensusDesc.textContent = `${result.ticker} için ${c.buy_count} / 3 Model AL Sinyali Veriyor · Ort. Güven: %${c.avg_confidence} · Toplam Veri: ${result.total_records?.toLocaleString() || '—'} Mum`;
+        specificConsensusTitle.textContent = `Stock-Specific Consensus: ${isBuy ? 'BUY' : 'SELL'}`;
+        specificConsensusDesc.textContent = `${c.buy_count} / 3 Models signal BUY for ${result.ticker} · Avg Confidence: ${c.avg_confidence}% · Total Data: ${result.total_records?.toLocaleString() || '—'} Candles`;
     }
 
     // 4 Stock-Specific Model Cards Grid
@@ -546,20 +545,20 @@ function showSpecificResult(result) {
                 <div class="model-card-body">
                     <div class="model-signal-badge ${isBuy ? 'buy' : 'sell'}">
                         <span class="signal-arrow">${isBuy ? '▲' : '▼'}</span>
-                        <span class="signal-name">${isBuy ? 'BUY — AL' : 'SELL — SAT'}</span>
+                        <span class="signal-name">${isBuy ? 'BUY' : 'SELL'}</span>
                     </div>
                     <div class="model-metrics-grid">
                         <div class="model-metric">
-                            <span class="metric-label">Güven</span>
-                            <span class="metric-val">%${m.confidence}</span>
+                            <span class="metric-label">Confidence</span>
+                            <span class="metric-val">${m.confidence}%</span>
                         </div>
                         <div class="model-metric">
                             <span class="metric-label">Accuracy</span>
-                            <span class="metric-val">%${(m.accuracy * 100).toFixed(1)}</span>
+                            <span class="metric-val">${(m.accuracy * 100).toFixed(1)}%</span>
                         </div>
                         <div class="model-metric">
                             <span class="metric-label">Buy Precision</span>
-                            <span class="metric-val">%${(m.precision_buy * 100).toFixed(1)}</span>
+                            <span class="metric-val">${(m.precision_buy * 100).toFixed(1)}%</span>
                         </div>
                     </div>
                 </div>
@@ -580,7 +579,7 @@ function renderFeatureImportance(result) {
     if (!result || !result.models) return;
     const modelData = result.models[activeFiModel];
     if (!modelData || !modelData.feature_importance || modelData.feature_importance.length === 0) {
-        fiBars.innerHTML = `<div class="fi-empty">Bu model için (ör. SVM) feature importance doğrudan mevcut değildir.</div>`;
+        fiBars.innerHTML = `<div class="fi-empty">Feature importance is not directly available for this model (e.g. SVM).</div>`;
         return;
     }
 
@@ -601,7 +600,7 @@ function renderFeatureImportance(result) {
 
 // ─── Show Specific Error ────────────────────────────────────
 function showSpecificError(message) {
-    specificBadge.textContent = '❌ Hata';
+    specificBadge.textContent = '❌ Error';
     specificBadge.className = 'card-badge badge-error';
     trainingProgress.style.display = 'none';
     trainingResult.style.display = 'none';
@@ -623,47 +622,47 @@ const featureDescriptions = {
     'RSI_14': {
         label: 'RSI (14)',
         desc: (v) => {
-            if (v > 70) return 'Aşırı alım bölgesi — düşüş sinyali';
-            if (v < 30) return 'Aşırı satım bölgesi — yükseliş sinyali';
-            return 'Nötr bölge';
+            if (v > 70) return 'Overbought region — bearish reversal signal';
+            if (v < 30) return 'Oversold region — bullish reversal signal';
+            return 'Neutral region';
         },
         cssClass: (v) => v > 70 ? 'rsi-overbought' : v < 30 ? 'rsi-oversold' : 'rsi-neutral',
         format: (v) => v.toFixed(1),
     },
     'MACD_Hist': {
         label: 'MACD Histogram',
-        desc: (v) => v > 0 ? 'Pozitif — yükseliş momentumu' : 'Negatif — düşüş momentumu',
+        desc: (v) => v > 0 ? 'Positive — bullish momentum' : 'Negative — bearish momentum',
         cssClass: (v) => v > 0 ? 'macd-positive' : 'macd-negative',
         format: (v) => v.toFixed(4),
     },
     'SMA_20_Ratio': {
-        label: 'Fiyat / SMA(20)',
-        desc: (v) => v > 1 ? `Fiyat 20 saatlik ortalamanın %${((v-1)*100).toFixed(1)} üstünde` : `Fiyat 20 saatlik ortalamanın %${((1-v)*100).toFixed(1)} altında`,
+        label: 'Price / SMA(20)',
+        desc: (v) => v > 1 ? `Price is ${((v-1)*100).toFixed(1)}% above 20-hour SMA` : `Price is ${((1-v)*100).toFixed(1)}% below 20-hour SMA`,
         format: (v) => v.toFixed(4),
     },
     'SMA_50_Ratio': {
-        label: 'Fiyat / SMA(50)',
-        desc: (v) => v > 1 ? `Fiyat 50 saatlik ortalamanın %${((v-1)*100).toFixed(1)} üstünde` : `Fiyat 50 saatlik ortalamanın %${((1-v)*100).toFixed(1)} altında`,
+        label: 'Price / SMA(50)',
+        desc: (v) => v > 1 ? `Price is ${((v-1)*100).toFixed(1)}% above 50-hour SMA` : `Price is ${((1-v)*100).toFixed(1)}% below 50-hour SMA`,
         format: (v) => v.toFixed(4),
     },
     'Hourly_Return': {
-        label: 'Son Saatlik Getiri',
-        desc: (v) => `Son 1 saatte %${(v*100).toFixed(3)} ${v >= 0 ? 'yükseliş' : 'düşüş'}`,
+        label: 'Latest Hourly Return',
+        desc: (v) => `Hourly return: ${(v * 100).toFixed(3)}% ${v >= 0 ? '(Up)' : '(Down)'}`,
         format: (v) => (v * 100).toFixed(3) + '%',
     },
     'Return_lag_1': {
-        label: '1 Saat Önceki Getiri',
-        desc: () => 'Bir önceki saatlik değişim',
+        label: '1-Hour Lag Return',
+        desc: () => 'Return 1 hour prior',
         format: (v) => (v * 100).toFixed(3) + '%',
     },
     'Return_lag_2': {
-        label: '2 Saat Önceki Getiri',
-        desc: () => 'İki saat önceki değişim',
+        label: '2-Hour Lag Return',
+        desc: () => 'Return 2 hours prior',
         format: (v) => (v * 100).toFixed(3) + '%',
     },
     'Return_lag_3': {
-        label: '3 Saat Önceki Getiri',
-        desc: () => 'Üç saat önceki değişim',
+        label: '3-Hour Lag Return',
+        desc: () => 'Return 3 hours prior',
         format: (v) => (v * 100).toFixed(3) + '%',
     },
 };
@@ -690,4 +689,3 @@ function renderFeatureGauges(features) {
         gaugeGrid.appendChild(item);
     }
 }
-

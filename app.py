@@ -227,7 +227,7 @@ def api_task_status(task_id):
 
 if __name__ == "__main__":
     print("\n" + "=" * 60)
-    print("  NASDAQ AI Tahmin Merkezi (Multi-Model Ensemble)")
+    print("  PredictNasdaq - NASDAQ AI Multi-Model Ensemble Engine")
     print("  Starting on http://localhost:5000")
     print("=" * 60 + "\n")
     app.run(debug=True, host="0.0.0.0", port=5000)

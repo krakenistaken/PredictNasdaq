@@ -8,7 +8,7 @@ def launch_flask():
 
 if __name__ == "__main__":
     print("\n" + "=" * 65)
-    print("  NASDAQ AI Tahmin Merkezi (Desktop App Window Launcher)")
+    print("  PredictNasdaq Desktop Window Launcher")
     print("=" * 65 + "\n")
 
     # Start Flask server in background thread
@@ -20,7 +20,7 @@ if __name__ == "__main__":
         import webview
         print("Launching native desktop window using pywebview...")
         webview.create_window(
-            title="🔮 NASDAQ AI Tahmin Merkezi",
+            title="🔮 PredictNasdaq Engine",
             url="http://127.0.0.1:5000",
             width=1280,
             height=850,
