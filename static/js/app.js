@@ -113,26 +113,49 @@ const MOCK_TICKERS = [
     { symbol: "AVGO", name: "Broadcom Inc.", sector: "Technology", lastsale: "$152.90" }
 ];
 
+function getAppUrl(relativePath) {
+    let loc = window.location.pathname;
+    if (!loc.endsWith('/')) {
+        loc = loc + '/';
+    }
+    if (relativePath.startsWith('/')) relativePath = relativePath.slice(1);
+    return loc + relativePath;
+}
+
 // ─── Load Tickers ───────────────────────────────────────────
 async function loadTickers() {
     try {
         let tickersData = null;
+
+        // 1. Try Flask backend API first
         try {
-            const resp = await fetch('api/tickers');
+            const resp = await fetch(getAppUrl('api/tickers'));
             if (resp.ok) {
                 const data = await resp.json();
-                if (data.status === 'ok') tickersData = data.tickers;
+                if (data.status === 'ok' && Array.isArray(data.tickers)) tickersData = data.tickers;
             }
         } catch (e) {}
 
+        // 2. Try static tickers.json (multiple path attempts for subpath resilience)
         if (!tickersData) {
-            try {
-                const staticResp = await fetch('static/tickers.json');
-                if (staticResp.ok) {
-                    tickersData = await staticResp.json();
-                }
-            } catch (e) {
-                console.log("Static tickers.json unreachable. Falling back to default list.");
+            const candidatePaths = [
+                getAppUrl('static/tickers.json'),
+                './static/tickers.json',
+                'static/tickers.json'
+            ];
+
+            for (const path of candidatePaths) {
+                try {
+                    const staticResp = await fetch(path);
+                    if (staticResp.ok) {
+                        const json = await staticResp.json();
+                        if (Array.isArray(json) && json.length > 0) {
+                            tickersData = json;
+                            console.log(`Loaded ${json.length} tickers from ${path}`);
+                            break;
+                        }
+                    }
+                } catch (e) {}
             }
         }
 
@@ -277,7 +300,7 @@ async function runAnalysis() {
     try {
         let data = null;
         try {
-            const resp = await fetch(`api/predict/${ticker.symbol}`, { method: 'POST' });
+            const resp = await fetch(getAppUrl(`api/predict/${ticker.symbol}`), { method: 'POST' });
             if (resp.ok) {
                 data = await resp.json();
             }
