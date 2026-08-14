@@ -123,8 +123,17 @@ async function loadTickers() {
                 const data = await resp.json();
                 if (data.status === 'ok') tickersData = data.tickers;
             }
-        } catch (e) {
-            console.log("Backend API unreachable. Using static ticker preview.");
+        } catch (e) {}
+
+        if (!tickersData) {
+            try {
+                const staticResp = await fetch('static/tickers.json');
+                if (staticResp.ok) {
+                    tickersData = await staticResp.json();
+                }
+            } catch (e) {
+                console.log("Static tickers.json unreachable. Falling back to default list.");
+            }
         }
 
         allTickers = tickersData || MOCK_TICKERS;
